@@ -51,9 +51,8 @@ module Core = struct
         [@printer
           fun fmt (head, tail) ->
             let tail = List.map show_value tail in
-            let tail = String.concat " " tail in
-            fprintf fmt "%s %s" head tail]
-    (* TODO: implement closure *)
+            if List.is_empty tail then fprintf fmt "%s" head
+            else fprintf fmt "%s %s" head (String.concat " " tail)]
     | Closure of (value -> value)
         [@printer fun fmt _ -> fprintf fmt "<closure>"]
   [@@deriving show]

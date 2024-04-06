@@ -18,6 +18,7 @@
 %token EOF
 
 %start <t> main
+%start <term> repl_term
 %%
 
 let loc(p) ==
@@ -49,5 +50,7 @@ let top_level :=
     ASSIGN; ts=list(tm);
     { Let { name; recursive = false; ty; body = build_tm ts } }
 
+let repl_term :=
+  | ts=list(tm); EOF; { build_tm ts }
 let main :=
 | ~ = list(loc(top_level)); EOF; <>

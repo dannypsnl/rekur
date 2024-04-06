@@ -1,4 +1,6 @@
 (executable
  (public_name rekur)
  (name main)
+ (preprocess
+  (pps ppx_deriving.show))
  (libraries rekur eio_main asai cmdliner dune-build-info))
