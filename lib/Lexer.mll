@@ -19,6 +19,7 @@ rule token =
   parse
   | "#" { comment lexbuf }
   | "import" { return lexbuf @@ Grammar.IMPORT }
+  | "open" { return lexbuf @@ Grammar.OPEN }
   | "data" { return lexbuf @@ Grammar.DATA }
   | "let" { return lexbuf @@ Grammar.LET }
   | "rec" { return lexbuf @@ Grammar.REC }

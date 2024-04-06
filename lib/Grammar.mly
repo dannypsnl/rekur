@@ -9,7 +9,7 @@
        LET
        REC
        FUN
-       IMPORT
+       IMPORT OPEN
 %token LPAREN RPAREN
        COLON
        VERT
@@ -28,7 +28,7 @@ let loc(p) ==
 let parens(p) == delimited(LPAREN, p, RPAREN)
 
 let typ :=
-  | name=IDENT; { Const { name } }
+  | name=separated_nonempty_list(DOT, IDENT); { Const { name } }
   | t1=typ; ARROW; t2=typ; <Arrow>
 
 let app :=
@@ -42,6 +42,7 @@ let case :=
   | VERT; name=IDENT; params=list(typ); { Case { name; params } }
 
 let top_level :=
+  | OPEN; ~=separated_nonempty_list(DOT, IDENT); <Open>
   | DATA; name=IDENT; cases=list(case); { Data { name; cases } }
   | LET; name=IDENT; COLON; ty=typ;
     ASSIGN; ts=list(tm);

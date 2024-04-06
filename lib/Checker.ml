@@ -2,13 +2,21 @@ open Syntax
 
 let rec lift (from : Surface.typ) : Core.typ =
   match from with
-  | Const { name = x } -> Const x
+  | Const { name = x } -> (
+      match Context.S.resolve x with
+      | Some _ -> Const x
+      | None ->
+          Reporter.fatalf Type_error "no type named: `%s`" (String.concat "." x)
+      )
   | Arrow (a, b) -> Arrow (lift a, lift b)
+
+let path_equal a b =
+  List.fold_left2 (fun acc x y -> acc && String.equal x y) true a b
 
 let rec unify ~(expected : Core.typ) (actual : Core.typ) : unit =
   match (expected, actual) with
   | Const a, Const b ->
-      if String.equal a b then () else report_mismatch expected actual
+      if path_equal a b then () else report_mismatch expected actual
   | Arrow (a1, a2), Arrow (b1, b2) ->
       unify ~expected:a1 b1;
       unify ~expected:a2 b2
@@ -55,7 +63,6 @@ let insert_constructor (data_type : Core.typ) (c : Surface.case) : unit =
   | Case { name; params = tys } ->
       let tys = List.map lift tys in
       let ty = Core.build_app tys data_type in
-      Eio.traceln "%s : %s" name (Core.show_typ ty);
       Context.S.include_singleton ~context_visible:`Visible
         ~context_export:`Export
         ([ name ], (ty, `Local));
@@ -98,8 +105,17 @@ let rec process_file ~env ~working_dir source_path : Yuujinchou.Trie.path list =
 and check_top ({ loc; value = top } : Surface.top Range.located) : unit =
   Reporter.merge_loc loc @@ fun () ->
   match top with
+  | Open path ->
+      (Context.S.modify_visible
+      @@ Yuujinchou.Language.(union [ all; renaming path [] ]));
+      Environment.S.modify_visible
+      @@ Yuujinchou.Language.(union [ all; renaming path [] ])
   | Data { name; cases } ->
-      let data_type : Core.typ = Const name in
+      Context.S.include_singleton ~context_visible:`Visible
+        ~context_export:`Export
+        ([ name ], (Type, `Local));
+      let data_type : Core.typ = Const [ name ] in
+      Context.S.section [ name ] @@ fun () ->
       List.iter (insert_constructor data_type) cases
   | Let { name; recursive; ty; body } ->
       if recursive then (* TODO: skip recursive part for now *)
@@ -112,5 +128,4 @@ and check_top ({ loc; value = top } : Surface.top Range.located) : unit =
           ([ name ], (ty, `Local));
         Environment.S.include_singleton ~context_visible:`Visible
           ~context_export:`Export
-          ([ name ], (Eval.eval body, `Local));
-        Eio.traceln "let %s = ... checked" name
+          ([ name ], (Eval.eval body, `Local))

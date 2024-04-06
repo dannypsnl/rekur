@@ -69,6 +69,12 @@ let load_cmd ~env =
           common_process ~env filename;
           let stdin = Stdenv.stdin env in
           let stdout = Stdenv.stdout env in
+          let visible = Rekur.Context.S.get_visible () in
+          Seq.iter (fun (path, (ty, _)) ->
+              traceln "Γ ⊢ %s : %s" (String.concat "." path)
+                (Rekur.Syntax.Core.show_typ ty);
+              ())
+          @@ Yuujinchou.Trie.to_seq visible;
           repl ~stdin ~stdout)
       $ arg_file)
 

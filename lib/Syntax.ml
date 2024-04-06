@@ -5,7 +5,7 @@ module Surface = struct
 
   open Range
 
-  type typ = Const of { name : string } | Arrow of typ * typ
+  type typ = Const of { name : Trie.path } | Arrow of typ * typ
 
   and term =
     | Lambda of { param_name : string; body : term }
@@ -13,6 +13,7 @@ module Surface = struct
     | App of term * term
 
   type top =
+    | Open of Trie.path
     | Let of { name : string; recursive : bool; ty : typ; body : term }
     | Data of { name : string; cases : case list }
 
@@ -30,7 +31,9 @@ end
 
 module Core = struct
   type typ =
-    | Const of string [@printer fun fmt -> fprintf fmt "%s"]
+    | Type
+    | Const of Trie.path
+        [@printer fun fmt path -> fprintf fmt "%s" (String.concat "." path)]
     | Arrow of typ * typ
         [@printer
           fun fmt (a, b) -> fprintf fmt "%s -> %s" (show_typ a) (show_typ b)]
