@@ -48,7 +48,7 @@ let top_level :=
     { Let { name; recursive = false; ty; body = build_tm ts } }
   | LET; REC; name=IDENT; COLON; ty=typ;
     ASSIGN; ts=list(tm);
-    { Let { name; recursive = false; ty; body = build_tm ts } }
+    { Let { name; recursive = true; ty; body = build_tm ts } }
 
 let repl_term :=
   | ts=list(tm); EOF; { build_tm ts }
