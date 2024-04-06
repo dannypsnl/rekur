@@ -23,3 +23,20 @@ module Surface = struct
     | [ x ] -> x
     | x :: xs -> App (x, build_tm xs)
 end
+
+module Core = struct
+  type typ =
+    | Const of string [@printer fun fmt -> fprintf fmt "%s"]
+    | Arrow of typ * typ
+        [@printer
+          fun fmt (a, b) -> fprintf fmt "%s -> %s" (show_typ a) (show_typ b)]
+    | Meta
+  [@@deriving show]
+
+  type term = Var of string | Lambda of string * term | App of term * term
+
+  type value =
+    (* span is a value for normal form, e.g. `suc zero` is `Span suc [Span zero []]` *)
+    | Span of string * value list
+    | Closure
+end

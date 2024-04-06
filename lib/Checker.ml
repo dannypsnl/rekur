@@ -1,10 +1,71 @@
 open Syntax
 
+exception TODO
+
+let rec lift (from : Surface.typ) : Core.typ =
+  match from with
+  | Const { name = x } -> Const x
+  | Arrow (a, b) -> Arrow (lift a, lift b)
+
+let rec unify ~(expected : Core.typ) (actual : Core.typ) : unit =
+  match (expected, actual) with
+  | Const a, Const b ->
+      if String.equal a b then () else report_mismatch expected actual
+  | Arrow (a1, a2), Arrow (b1, b2) ->
+      unify ~expected:a1 b1;
+      unify ~expected:a2 b2
+  | _, _ -> report_mismatch expected actual
+
+and report_mismatch a b =
+  Reporter.fatalf Type_error "type mismatched, expected: `%s`, got: `%s`"
+    (Core.show_typ a) (Core.show_typ b)
+
+let rec infer (tm : Surface.term) : Core.typ * Core.term =
+  match tm with
+  | Lambda _ -> Reporter.fatalf Type_error "cannot infer type of a lambda"
+  | Var { name } -> (
+      match Context.S.resolve [ name ] with
+      | Some (ty, _) -> (ty, Var name)
+      | None -> Reporter.fatalf NoVar_error "failed to find %s in context" name)
+  | App (a, b) -> (
+      match infer a with
+      | Arrow (t1, t2), a ->
+          let tb, b = infer b in
+          unify ~expected:t1 tb;
+          (t2, App (a, b))
+      | _ -> raise TODO)
+
+and check (tm : Surface.term) (ty : Core.typ) : Core.term =
+  match (tm, ty) with
+  | Lambda { param_name; body }, Arrow (pty, ty) ->
+      Context.S.try_with ~shadow:Context.S.Silence.shadow @@ fun () ->
+      Context.S.include_singleton ([ param_name ], (pty, `Local));
+      let ty', body = infer body in
+      unify ~expected:ty ty';
+      Core.Lambda (param_name, body)
+  | tm, ty ->
+      let ty', tm = infer tm in
+      unify ~expected:ty ty';
+      tm
+
 let check_top (top : Surface.top) : unit =
-  match top with Data _ -> () | Let _ -> ()
+  match top with
+  | Data _ -> ()
+  | Let { name; recursive; ty; body } ->
+      if recursive then (* TODO: skip recursive part for now *)
+        ()
+      else
+        let ty = lift ty in
+        let _ = check body ty in
+        Context.S.include_singleton ~context_visible:`Visible
+          ~context_export:`Export
+          ([ name ], (ty, `Local));
+        Eio.traceln "A let binding checked"
 
 let rec check_tree ~env : Surface.t -> unit =
  fun tops ->
+  let open Context.Handler in
+  Context.S.run ~shadow ~not_found ~hook @@ fun () ->
   match tops with
   | [] -> ()
   | { loc; value = top } :: tops ->
