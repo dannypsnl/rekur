@@ -62,14 +62,17 @@ let insert_constructor (data_type : Core.typ) (c : Surface.case) : unit =
         ~context_export:`Export
         ([ name ], (Spine (name, []), `Local))
 
-let rec process_file ~env ~working_dir source_path : unit =
+let rec process_file ~env ~working_dir source_path : Yuujinchou.Trie.path list =
   if Filename.extension source_path = ".kr" then (
     let { import_list; top_list } : Surface.t = Parser.parse_file source_path in
     (* 1. go to process all dependencies *)
     List.iter
       (fun path ->
-        process_file ~env ~working_dir
-          (Filename.concat working_dir (String.concat "/" path ^ ".kr")))
+        let _ =
+          process_file ~env ~working_dir
+            (Filename.concat working_dir (String.concat "/" path ^ ".kr"))
+        in
+        ())
       import_list;
     let module_name =
       Filename.chop_extension @@ Filename.basename source_path
@@ -85,7 +88,8 @@ let rec process_file ~env ~working_dir source_path : unit =
         @@ Yuujinchou.Language.(union [ all; renaming p [] ]))
       import_list;
     (* 3. start checking top-level definitions *)
-    List.iter check_top top_list)
+    List.iter check_top top_list;
+    import_list)
   else
     Reporter.fatalf IO_error
       "`%s` is not proper, a proper source file should be `*.kr`" source_path

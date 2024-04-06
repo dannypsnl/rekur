@@ -11,7 +11,16 @@ let version =
 
 let common_process ~env filename =
   let working_dir = Filename.dirname filename in
-  Rekur.Checker.process_file ~env ~working_dir filename
+  let import_list = Rekur.Checker.process_file ~env ~working_dir filename in
+  (* after process the module, open module so REPL can use *)
+  List.iter
+    (fun p ->
+      (Rekur.Context.S.modify_visible
+      @@ Yuujinchou.Language.(union [ all; renaming p [] ]));
+      Rekur.Environment.S.modify_visible
+      @@ Yuujinchou.Language.(union [ all; renaming p [] ]))
+      (* except imported, also open current module for REPL *)
+    ([ Filename.remove_extension @@ Filename.basename filename ] :: import_list)
 
 let run_cmd ~env =
   let arg_file =
@@ -60,18 +69,6 @@ let load_cmd ~env =
           common_process ~env filename;
           let stdin = Stdenv.stdin env in
           let stdout = Stdenv.stdout env in
-          let visible = Rekur.Context.S.get_visible () in
-          let s = Yuujinchou.Trie.to_seq visible in
-          Seq.iter
-            (fun (p, (ty, _)) ->
-              traceln "%s : %s" (String.concat "." p)
-                (Rekur.Syntax.Core.show_typ ty))
-            s;
-          let p = Filename.remove_extension @@ Filename.basename filename in
-          (Rekur.Context.S.modify_visible
-          @@ Yuujinchou.Language.(union [ all; renaming [ p ] [] ]));
-          (Rekur.Environment.S.modify_visible
-          @@ Yuujinchou.Language.(union [ all; renaming [ p ] [] ]));
           repl ~stdin ~stdout)
       $ arg_file)
 
