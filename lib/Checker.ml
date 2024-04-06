@@ -25,8 +25,9 @@ let rec infer (tm : Surface.term) : Core.typ * Core.term =
   | Lambda _ -> Reporter.fatalf Type_error "cannot infer type of a lambda"
   | Var { name } -> (
       match Context.S.resolve [ name ] with
-      | Some (ty, _) -> (ty, Var name)
-      | None -> Reporter.fatalf NoVar_error "failed to find %s in context" name)
+      | Some (ty, _) -> (ty, Var [ name ])
+      | None ->
+          Reporter.fatalf NoVar_error "failed to find `%s` in context" name)
   | App (a, b) -> (
       match infer a with
       | Arrow (t1, t2), a ->
@@ -42,15 +43,27 @@ and check (tm : Surface.term) (ty : Core.typ) : Core.term =
       Context.S.include_singleton ([ param_name ], (pty, `Local));
       let ty', body = infer body in
       unify ~expected:ty ty';
-      Core.Lambda (param_name, body)
+      Core.Lambda ([ param_name ], body)
   | tm, ty ->
       let ty', tm = infer tm in
       unify ~expected:ty ty';
       tm
 
+let insert_constructor (data_type : Core.typ) (c : Surface.case) : unit =
+  match c with
+  | Case { name; params = tys } ->
+      let tys = List.map lift tys in
+      let ty = Core.build_app tys data_type in
+      Eio.traceln "%s : %s" name (Core.show_typ ty);
+      Context.S.include_singleton ~context_visible:`Visible
+        ~context_export:`Export
+        ([ name ], (ty, `Local))
+
 let check_top (top : Surface.top) : unit =
   match top with
-  | Data _ -> ()
+  | Data { name; cases } ->
+      let data_type : Core.typ = Const name in
+      List.iter (insert_constructor data_type) cases
   | Let { name; recursive; ty; body } ->
       if recursive then (* TODO: skip recursive part for now *)
         ()
@@ -64,8 +77,6 @@ let check_top (top : Surface.top) : unit =
 
 let rec check_tree ~env : Surface.t -> unit =
  fun tops ->
-  let open Context.Handler in
-  Context.S.run ~shadow ~not_found ~hook @@ fun () ->
   match tops with
   | [] -> ()
   | { loc; value = top } :: tops ->

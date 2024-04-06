@@ -31,14 +31,13 @@ module Handler = struct
     | x, `Local -> Format.fprintf fmt "%s (local)" (show_typ x)
 
   let not_found context prefix =
-    Format.printf
+    Eio.traceln
       "[Warning] Could not find any data within the subtree at %a%a.@." pp_path
       prefix pp_context context
 
   let shadow context path x y =
-    Format.printf
-      "[Warning] Data %a assigned at %a was shadowed by data %a%a.@." pp_item x
-      pp_path path pp_item y pp_context context;
+    Eio.traceln "[Warning] Data %a assigned at %a was shadowed by data %a%a.@."
+      pp_item x pp_path path pp_item y pp_context context;
     y
 
   let hook context prefix hook input =

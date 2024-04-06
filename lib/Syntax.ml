@@ -1,3 +1,5 @@
+open Yuujinchou
+
 module Surface = struct
   exception BuildTermFromNothing
 
@@ -35,10 +37,17 @@ module Core = struct
     | Meta
   [@@deriving show]
 
-  type term = Var of string | Lambda of string * term | App of term * term
+  let rec build_app (tys : typ list) (result : typ) : typ =
+    match tys with [] -> result | t :: ts -> Arrow (t, build_app ts result)
+
+  type term =
+    | Var of Trie.path
+    | Lambda of Trie.path * term
+    | App of term * term
 
   type value =
     (* span is a value for normal form, e.g. `suc zero` is `Span suc [Span zero []]` *)
     | Span of string * value list
+    (* TODO: provide closure *)
     | Closure
 end

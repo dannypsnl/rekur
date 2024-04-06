@@ -45,4 +45,6 @@ let () =
   Printexc.record_backtrace true;
   Eio_main.run @@ fun env ->
   Rekur.Reporter.run ~emit:Tty.display ~fatal @@ fun () ->
+  let open Rekur.Context.Handler in
+  Rekur.Context.S.run ~shadow ~not_found ~hook @@ fun () ->
   exit @@ Cmd.eval ~catch:false @@ cmd ~env
