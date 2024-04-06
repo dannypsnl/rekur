@@ -35,7 +35,7 @@ let app :=
   | ts=list(tm); { build_tm ts }
 let tm :=
   | FUN; name=IDENT; ARROW; tm=tm; { Lambda { param_name = name; body = tm } }
-  | name=IDENT; { Var { name } }
+  | name=separated_nonempty_list(DOT, IDENT); { Var { name } }
   | parens(app)
 
 let case :=
@@ -54,7 +54,7 @@ let repl_term :=
   | ts=list(tm); EOF; { build_tm ts }
 
 let import :=
-  | IMPORT; ~=separated_list(DOT, IDENT); <>
+  | IMPORT; ~=separated_nonempty_list(DOT, IDENT); <>
 let main :=
   | import_list=list(import); top_list=list(loc(top_level)); EOF;
     { { import_list; top_list } }

@@ -22,10 +22,11 @@ let rec infer (tm : Surface.term) : Core.typ * Core.term =
   match tm with
   | Lambda _ -> Reporter.fatalf Type_error "cannot infer type of a lambda"
   | Var { name } -> (
-      match Context.S.resolve [ name ] with
-      | Some (ty, _) -> (ty, Var [ name ])
+      match Context.S.resolve name with
+      | Some (ty, _) -> (ty, Var name)
       | None ->
-          Reporter.fatalf NoVar_error "failed to find `%s` in context" name)
+          Reporter.fatalf NoVar_error "failed to find `%s` in context"
+            (String.concat "." name))
   | App (a, b) -> (
       match infer a with
       | Arrow (t1, t2), a ->

@@ -9,7 +9,7 @@ module Surface = struct
 
   and term =
     | Lambda of { param_name : string; body : term }
-    | Var of { name : string }
+    | Var of { name : Trie.path }
     | App of term * term
 
   type top =
