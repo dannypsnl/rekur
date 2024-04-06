@@ -60,7 +60,7 @@ let check_top (top : Surface.top) : unit =
         Context.S.include_singleton ~context_visible:`Visible
           ~context_export:`Export
           ([ name ], (ty, `Local));
-        Eio.traceln "A let binding checked"
+        Eio.traceln "let %s = ... checked" name
 
 let rec check_tree ~env : Surface.t -> unit =
  fun tops ->

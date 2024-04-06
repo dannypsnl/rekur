@@ -1,2 +1,4 @@
 data Nat
+  | zero
+  | suc Nat
 let id : Nat -> Nat := \x -> x

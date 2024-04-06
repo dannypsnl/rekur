@@ -12,7 +12,9 @@ module Surface = struct
 
   type top =
     | Let of { name : string; recursive : bool; ty : typ; body : term }
-    | Data of { name : string }
+    | Data of { name : string; cases : case list }
+
+  and case = Case of { name : string; params : typ list }
 
   type t = top located list
 

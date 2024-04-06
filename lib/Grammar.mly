@@ -12,6 +12,7 @@
 %token LPAREN RPAREN
        SEMICOLON
        COLON
+       VERT
        ASSIGN
        ARROW
 %token EOF
@@ -32,17 +33,15 @@ let app :=
   | ts=list(tm); { build_tm ts }
 
 let tm :=
-  | FUN; name=IDENT; ARROW; tm=tm; { Lambda {
-      param_name = name; body = tm
-    } }
+  | FUN; name=IDENT; ARROW; tm=tm; { Lambda { param_name = name; body = tm } }
   | name=IDENT; { Var { name } }
   | parens(app)
 
+let case :=
+  | VERT; name=IDENT; params=list(typ); { Case { name; params } }
+
 let top_level :=
-  | DATA; name=IDENT;
-    { Data {
-        name
-    } }
+  | DATA; name=IDENT; cases=list(case); { Data { name; cases } }
   | LET; name=IDENT; COLON; ty=typ;
     ASSIGN; ts=list(tm);
     { Let { name; recursive = false; ty; body = build_tm ts } }

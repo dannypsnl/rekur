@@ -24,6 +24,7 @@ rule token =
   | "\\" { return lexbuf @@ Grammar.FUN }
   | ident { return lexbuf @@ ident (Lexing.lexeme lexbuf) }
   | "->" { return lexbuf @@ Grammar.ARROW }
+  | '|' { return lexbuf @@ Grammar.VERT }
   | ':' { return lexbuf @@ Grammar.COLON }
   | ":=" { return lexbuf @@ Grammar.ASSIGN }
   | '(' { return lexbuf @@ Grammar.LPAREN }
