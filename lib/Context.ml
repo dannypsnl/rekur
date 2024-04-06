@@ -30,24 +30,24 @@ module Handler = struct
     | x, `Imported -> Format.fprintf fmt "%s (imported)" (show_typ x)
     | x, `Local -> Format.fprintf fmt "%s (local)" (show_typ x)
 
-  let not_found context prefix =
-    Eio.traceln
-      "[Warning] Could not find any data within the subtree at %a%a.@." pp_path
-      prefix pp_context context
-
   let shadow context path x y =
     Eio.traceln "[Warning] Data %a assigned at %a was shadowed by data %a%a.@."
       pp_item x pp_path path pp_item y pp_context context;
     y
 
+  let not_found context prefix =
+    Eio.traceln
+      "[Warning] Could not find any data within the subtree at %a%a.@." pp_path
+      prefix pp_context context
+
   let hook context prefix hook input =
     match hook with
     | Print ->
-        Format.printf "@[<v 2>[Info] Got the following bindings at %a%a:@;"
+        Eio.traceln "@[<v 2>[Info] Got the following bindings at %a%a:@;"
           pp_path prefix pp_context context;
         Trie.iter
-          (fun path x -> Format.printf "%a => %a@;" pp_path path pp_item x)
+          (fun path x -> Eio.traceln "%a => %a@;" pp_path path pp_item x)
           input;
-        Format.printf "@]@.";
+        Eio.traceln "@]@.";
         input
 end
