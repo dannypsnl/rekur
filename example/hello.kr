@@ -1,0 +1,2 @@
+data Nat
+let id : Nat -> Nat := \x -> x

@@ -3,16 +3,16 @@ module Surface = struct
 
   open Range
 
-  type top =
-    | Let of { name : string; recursive : bool; ty : typ; body : term }
-    | Data of { name : string }
-
-  and typ = Const of { name : string } | Arrow of typ * typ
+  type typ = Const of { name : string } | Arrow of typ * typ
 
   and term =
     | Lambda of { param_name : string; body : term }
     | Var of { name : string }
     | App of term * term
+
+  type top =
+    | Let of { name : string; recursive : bool; ty : typ; body : term }
+    | Data of { name : string }
 
   type t = top located list
 

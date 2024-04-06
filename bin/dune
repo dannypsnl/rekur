@@ -1,4 +1,4 @@
 (executable
  (public_name rekur)
  (name main)
- (libraries rekur eio_main))
+ (libraries rekur eio_main asai cmdliner dune-build-info))

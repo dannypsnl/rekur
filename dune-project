@@ -24,6 +24,7 @@
  (depends
   ocaml
   dune
+  cmdliner
   (eio_main
    (>= 0.12))
   (asai
