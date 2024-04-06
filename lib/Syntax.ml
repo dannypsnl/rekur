@@ -46,8 +46,15 @@ module Core = struct
     | App of term * term
 
   type value =
-    (* span is a value for normal form, e.g. `suc zero` is `Span suc [Span zero []]` *)
-    | Span of string * value list
-    (* TODO: provide closure *)
-    | Closure
+    (* spine is a value for normal form, e.g. `suc zero` is `Span suc [Span zero []]` *)
+    | Spine of string * value list
+        [@printer
+          fun fmt (head, tail) ->
+            let tail = List.map show_value tail in
+            let tail = String.concat " " tail in
+            fprintf fmt "%s %s" head tail]
+    (* TODO: implement closure *)
+    | Closure of (value -> value)
+        [@printer fun fmt _ -> fprintf fmt "<closure>"]
+  [@@deriving show]
 end

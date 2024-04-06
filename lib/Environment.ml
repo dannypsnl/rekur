@@ -3,14 +3,14 @@ open Bwd
 
 type modifier_cmd = Trace
 
-module TypeContext = struct
-  type data = Syntax.Core.typ
+module ValueEnv = struct
+  type data = Syntax.Core.value
   type tag = [ `Imported | `Local ]
   type hook = modifier_cmd
   type context = [ `Visible | `Export ]
 end
 
-module S = Scope.Make (TypeContext)
+module S = Scope.Make (ValueEnv)
 
 (* Handle scoping effects *)
 module Handler = struct
@@ -26,8 +26,8 @@ module Handler = struct
     | None -> ()
 
   let pp_item fmt = function
-    | x, `Imported -> Format.fprintf fmt "%s (imported)" (show_typ x)
-    | x, `Local -> Format.fprintf fmt "%s (local)" (show_typ x)
+    | x, `Imported -> Format.fprintf fmt "%s (imported)" (show_value x)
+    | x, `Local -> Format.fprintf fmt "%s (local)" (show_value x)
 
   let shadow context path x y =
     Eio.traceln "[Warning] Data %a assigned at %a was shadowed by data %a%a.@."

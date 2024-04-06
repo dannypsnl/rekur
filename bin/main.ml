@@ -47,4 +47,6 @@ let () =
   Rekur.Reporter.run ~emit:Tty.display ~fatal @@ fun () ->
   let open Rekur.Context.Handler in
   Rekur.Context.S.run ~shadow ~not_found ~hook @@ fun () ->
+  let open Rekur.Environment.Handler in
+  Rekur.Environment.S.run ~shadow ~not_found ~hook @@ fun () ->
   exit @@ Cmd.eval ~catch:false @@ cmd ~env

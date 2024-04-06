@@ -1,7 +1,5 @@
 open Syntax
 
-exception TODO
-
 let rec lift (from : Surface.typ) : Core.typ =
   match from with
   | Const { name = x } -> Const x
@@ -34,7 +32,9 @@ let rec infer (tm : Surface.term) : Core.typ * Core.term =
           let tb, b = infer b in
           unify ~expected:t1 tb;
           (t2, App (a, b))
-      | _ -> raise TODO)
+      | t, _ ->
+          Reporter.fatalf Type_error "`%s` is not appliable type"
+            (Core.show_typ t))
 
 and check (tm : Surface.term) (ty : Core.typ) : Core.term =
   match (tm, ty) with
@@ -57,7 +57,10 @@ let insert_constructor (data_type : Core.typ) (c : Surface.case) : unit =
       Eio.traceln "%s : %s" name (Core.show_typ ty);
       Context.S.include_singleton ~context_visible:`Visible
         ~context_export:`Export
-        ([ name ], (ty, `Local))
+        ([ name ], (ty, `Local));
+      Environment.S.include_singleton ~context_visible:`Visible
+        ~context_export:`Export
+        ([ name ], (Spine (name, []), `Local))
 
 let check_top (top : Surface.top) : unit =
   match top with
@@ -69,10 +72,13 @@ let check_top (top : Surface.top) : unit =
         ()
       else
         let ty = lift ty in
-        let _ = check body ty in
+        let body = check body ty in
         Context.S.include_singleton ~context_visible:`Visible
           ~context_export:`Export
           ([ name ], (ty, `Local));
+        Environment.S.include_singleton ~context_visible:`Visible
+          ~context_export:`Export
+          ([ name ], (Eval.eval body, `Local));
         Eio.traceln "let %s = ... checked" name
 
 let rec check_tree ~env : Surface.t -> unit =
