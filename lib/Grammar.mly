@@ -44,10 +44,10 @@ let top_level :=
         name
     } }
   | LET; name=IDENT; COLON; ty=typ;
-    ASSIGN; ts=list(tm); SEMICOLON;
+    ASSIGN; ts=list(tm);
     { Let { name; recursive = false; ty; body = build_tm ts } }
   | LET; REC; name=IDENT; COLON; ty=typ;
-    ASSIGN; ts=list(tm); SEMICOLON;
+    ASSIGN; ts=list(tm);
     { Let { name; recursive = false; ty; body = build_tm ts } }
 
 let main :=
