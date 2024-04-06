@@ -62,7 +62,36 @@ let insert_constructor (data_type : Core.typ) (c : Surface.case) : unit =
         ~context_export:`Export
         ([ name ], (Spine (name, []), `Local))
 
-let check_top (top : Surface.top) : unit =
+let rec process_file ~env ~working_dir source_path : unit =
+  if Filename.extension source_path = ".kr" then (
+    let { import_list; top_list } : Surface.t = Parser.parse_file source_path in
+    (* 1. go to process all dependencies *)
+    List.iter
+      (fun path ->
+        process_file ~env ~working_dir
+          (Filename.concat working_dir (String.concat "/" path ^ ".kr")))
+      import_list;
+    let module_name =
+      Filename.chop_extension @@ Filename.basename source_path
+    in
+    Context.S.section [ module_name ] @@ fun () ->
+    Environment.S.section [ module_name ] @@ fun () ->
+    (* 2. apply import statements *)
+    List.iter
+      (fun p ->
+        (Context.S.modify_visible
+        @@ Yuujinchou.Language.(union [ all; renaming p [] ]));
+        Environment.S.modify_visible
+        @@ Yuujinchou.Language.(union [ all; renaming p [] ]))
+      import_list;
+    (* 3. start checking top-level definitions *)
+    List.iter check_top top_list)
+  else
+    Reporter.fatalf IO_error
+      "`%s` is not proper, a proper source file should be `*.kr`" source_path
+
+and check_top ({ loc; value = top } : Surface.top Range.located) : unit =
+  Reporter.merge_loc loc @@ fun () ->
   match top with
   | Data { name; cases } ->
       let data_type : Core.typ = Const name in
@@ -80,12 +109,3 @@ let check_top (top : Surface.top) : unit =
           ~context_export:`Export
           ([ name ], (Eval.eval body, `Local));
         Eio.traceln "let %s = ... checked" name
-
-let rec check_tree ~env : Surface.t -> unit =
- fun tops ->
-  match tops with
-  | [] -> ()
-  | { loc; value = top } :: tops ->
-      Reporter.merge_loc loc @@ fun () ->
-      check_top top;
-      check_tree ~env tops

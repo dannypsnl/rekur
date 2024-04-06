@@ -1,6 +1,5 @@
-data Nat
-  | zero
-  | suc Nat
+import nat
+
 let id : Nat -> Nat := \x -> x
 let const : Nat := zero
 let const2 : Nat := suc zero

@@ -9,13 +9,9 @@ let version =
   | None -> "n/a"
   | Some v -> Build_info.V1.Version.to_string v
 
-let process_file ~env source_path =
-  if Filename.extension source_path = ".kr" then
-    let tree = Rekur.Parser.parse_file source_path in
-    Rekur.Checker.check_tree ~env tree
-  else
-    Rekur.Reporter.fatalf IO_error
-      "`%s` is not proper, a proper source file should be `*.kr`" source_path
+let common_process ~env filename =
+  let working_dir = Filename.dirname filename in
+  Rekur.Checker.process_file ~env ~working_dir filename
 
 let run_cmd ~env =
   let arg_file =
@@ -28,7 +24,7 @@ let run_cmd ~env =
   let man = [ `S Manpage.s_description; `P "" ] in
   let info = Cmd.info "run" ~version ~doc ~man in
   Cmd.v info
-    Term.(const (fun filename -> process_file ~env filename) $ arg_file)
+    Term.(const (fun filename -> common_process ~env filename) $ arg_file)
 
 let rec repl ~stdin ~stdout : unit =
   let read_buf = Buf_read.of_flow stdin ~initial_size:100 ~max_size:1_000_000 in
@@ -61,9 +57,21 @@ let load_cmd ~env =
   Cmd.v info
     Term.(
       const (fun filename ->
-          process_file ~env filename;
+          common_process ~env filename;
           let stdin = Stdenv.stdin env in
           let stdout = Stdenv.stdout env in
+          let visible = Rekur.Context.S.get_visible () in
+          let s = Yuujinchou.Trie.to_seq visible in
+          Seq.iter
+            (fun (p, (ty, _)) ->
+              traceln "%s : %s" (String.concat "." p)
+                (Rekur.Syntax.Core.show_typ ty))
+            s;
+          let p = Filename.remove_extension @@ Filename.basename filename in
+          (Rekur.Context.S.modify_visible
+          @@ Yuujinchou.Language.(union [ all; renaming [ p ] [] ]));
+          (Rekur.Environment.S.modify_visible
+          @@ Yuujinchou.Language.(union [ all; renaming [ p ] [] ]));
           repl ~stdin ~stdout)
       $ arg_file)
 

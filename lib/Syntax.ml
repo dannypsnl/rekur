@@ -18,7 +18,7 @@ module Surface = struct
 
   and case = Case of { name : string; params : typ list }
 
-  type t = top located list
+  type t = { import_list : Trie.path list; top_list : top located list }
 
   let rec build_tm : term list -> term =
    fun ts ->

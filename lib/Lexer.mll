@@ -18,6 +18,7 @@ let newline = '\r' | '\n' | "\r\n"
 rule token =
   parse
   | "#" { comment lexbuf }
+  | "import" { return lexbuf @@ Grammar.IMPORT }
   | "data" { return lexbuf @@ Grammar.DATA }
   | "let" { return lexbuf @@ Grammar.LET }
   | "rec" { return lexbuf @@ Grammar.LET }
@@ -29,6 +30,7 @@ rule token =
   | ":=" { return lexbuf @@ Grammar.ASSIGN }
   | '(' { return lexbuf @@ Grammar.LPAREN }
   | ')' { return lexbuf @@ Grammar.RPAREN }
+  | '.' { return lexbuf @@ Grammar.DOT }
   | whitespace { token lexbuf }
   | newline { Lexing.new_line lexbuf; token lexbuf }
   | eof { Grammar.EOF }
