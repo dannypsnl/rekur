@@ -31,7 +31,7 @@ end
 
 module Core = struct
   type typ =
-    | Type
+    | Type [@printer fun fmt _ -> fprintf fmt "Type"]
     | Const of Trie.path
         [@printer fun fmt path -> fprintf fmt "%s" (String.concat "." path)]
     | Arrow of typ * typ
