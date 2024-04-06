@@ -1,4 +1,4 @@
 (executable
  (public_name rekur)
  (name main)
- (libraries rekur))
+ (libraries rekur eio_main))

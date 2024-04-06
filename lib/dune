@@ -1,2 +1,10 @@
+(ocamllex Lexer)
+
+(menhir
+ (modules Grammar))
+
 (library
- (name rekur))
+ (name rekur)
+ (preprocess
+  (pps ppx_deriving.show))
+ (libraries yuujinchou asai eio))
