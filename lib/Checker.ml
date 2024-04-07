@@ -28,7 +28,9 @@ and report_mismatch a b =
 
 let rec infer (tm : Surface.term) : Core.typ * Core.term =
   match tm with
-  | Lambda _ -> Reporter.fatalf Type_error "cannot infer type of a lambda"
+  | Lambda { param_name; _ } ->
+      Reporter.fatalf Type_error
+        "cannot infer type of lambda term: `\\%s -> ...`" param_name
   | Var { name } -> (
       match Context.S.resolve name with
       | Some (ty, _) -> (ty, Var name)
@@ -41,9 +43,9 @@ let rec infer (tm : Surface.term) : Core.typ * Core.term =
           let tb, b = infer b in
           unify ~expected:t1 tb;
           (t2, App (a, b))
-      | t, _ ->
-          Reporter.fatalf Type_error "`%s` is not appliable type"
-            (Core.show_typ t))
+      | t, a ->
+          Reporter.fatalf Type_error "`%s : %s` is not appliable"
+            (Core.show_term a) (Core.show_typ t))
   | Match { target; cases } ->
       (* TODO: no check pattern is valid here yet *)
       let target_ty, target = infer target in
@@ -79,9 +81,12 @@ and check (tm : Surface.term) (ty : Core.typ) : Core.term =
   | Lambda { param_name; body }, Arrow (pty, ty) ->
       Context.S.try_with ~shadow:Context.S.Silence.shadow @@ fun () ->
       Context.S.include_singleton ([ param_name ], (pty, `Local));
-      let ty', body = infer body in
-      unify ~expected:ty ty';
+      let body = check body ty in
       Core.Lambda ([ param_name ], body)
+  | tm, Arrow _ ->
+      Reporter.fatalf Type_error
+        "cannot have non-lambda term `%s` under arrow type"
+        (Surface.show_term tm)
   | tm, ty ->
       let ty', tm = infer tm in
       unify ~expected:ty ty';
@@ -142,19 +147,17 @@ and check_top ({ loc; value = top } : Surface.top Range.located) : unit =
         ~context_export:`Export
         ([ name ], (Type, `Local));
       let data_type : Core.typ = Const [ name ] in
-      Context.S.section [ name ] @@ fun () ->
       List.iter (insert_constructor data_type) ctors
   | Let { name; recursive; ty; body } ->
       if recursive then (
         let ty = lift ty in
-        let body = check body ty in
         Context.S.include_singleton ~context_visible:`Visible
           ~context_export:`Export
           ([ name ], (ty, `Local));
+        let body = check body ty in
         Environment.S.include_singleton ~context_visible:`Visible
           ~context_export:`Export
-          ([ name ], (Eval.eval body, `Local));
-        Eio.traceln "let rec %s = ... checked" name)
+          ([ name ], (Eval.eval body, `Local)))
       else
         let ty = lift ty in
         let body = check body ty in

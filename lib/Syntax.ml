@@ -5,21 +5,27 @@ module Surface = struct
 
   open Range
 
-  type typ = Const of { name : Trie.path } | Arrow of typ * typ
+  type typ =
+    | Const of { name : Trie.path }
+        [@printer fun fmt path -> fprintf fmt "%s" (String.concat "." path)]
+    | Arrow of typ * typ
 
   and term =
     | Lambda of { param_name : string; body : term }
     | Var of { name : Trie.path }
+        [@printer fun fmt path -> fprintf fmt "%s" (String.concat "." path)]
     | App of term * term
     | Match of { target : term; cases : case list }
+  [@@deriving show]
 
-  and case = Case of pat * term
+  and case = Case of pat * term [@@deriving show]
 
   and pat =
     (* this is wildcard pattern *)
     | PVar of string
     (* this is constructor pattern *)
     | Spine of string * pat list
+  [@@deriving show]
 
   type top =
     | Open of Trie.path
@@ -34,7 +40,8 @@ module Surface = struct
     match ts with
     | [] -> raise BuildTermFromNothing
     | [ x ] -> x
-    | x :: xs -> App (x, build_tm xs)
+    | [ x; y ] -> App (x, y)
+    | x :: y :: xs -> App (App (x, y), build_tm xs)
 end
 
 module Core = struct
@@ -53,9 +60,14 @@ module Core = struct
 
   type term =
     | Var of Trie.path
+        [@printer fun fmt path -> fprintf fmt "%s" (String.concat "." path)]
     | Lambda of Trie.path * term
+        [@printer
+          fun fmt (path, tm) ->
+            fprintf fmt "\\%s -> %s" (String.concat "." path) (show_term tm)]
     | App of term * term
     | Match of term * case list
+  [@@deriving show]
 
   and case = Case of pat * term
 
