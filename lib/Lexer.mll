@@ -23,6 +23,7 @@ rule token =
   | "data" { return lexbuf @@ Grammar.DATA }
   | "let" { return lexbuf @@ Grammar.LET }
   | "rec" { return lexbuf @@ Grammar.REC }
+  | "match" { return lexbuf @@ Grammar.MATCH }
   | "\\" { return lexbuf @@ Grammar.FUN }
   | ident { return lexbuf @@ ident (Lexing.lexeme lexbuf) }
   | "->" { return lexbuf @@ Grammar.ARROW }

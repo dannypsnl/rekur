@@ -11,18 +11,26 @@ module Surface = struct
     | Lambda of { param_name : string; body : term }
     | Var of { name : Trie.path }
     | App of term * term
+    | Match of { target : term; cases : case list }
+
+  and case = Case of pat * term
+
+  and pat =
+    (* this is wildcard pattern *)
+    | PVar of string
+    (* this is constructor pattern *)
+    | Spine of string * pat list
 
   type top =
     | Open of Trie.path
     | Let of { name : string; recursive : bool; ty : typ; body : term }
-    | Data of { name : string; cases : case list }
+    | Data of { name : string; ctors : ctor list }
 
-  and case = Case of { name : string; params : typ list }
+  and ctor = Ctor of { name : string; params : typ list }
 
   type t = { import_list : Trie.path list; top_list : top located list }
 
-  let rec build_tm : term list -> term =
-   fun ts ->
+  let rec build_tm (ts : term list) : term =
     match ts with
     | [] -> raise BuildTermFromNothing
     | [ x ] -> x
@@ -47,6 +55,15 @@ module Core = struct
     | Var of Trie.path
     | Lambda of Trie.path * term
     | App of term * term
+    | Match of term * case list
+
+  and case = Case of pat * term
+
+  and pat =
+    (* this is wildcard pattern *)
+    | PVar of string
+    (* this is constructor pattern *)
+    | Spine of string * pat list
 
   type value =
     (* spine is a value for normal form, e.g. `suc zero` is `Span suc [Span zero []]` *)

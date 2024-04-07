@@ -44,6 +44,35 @@ let rec infer (tm : Surface.term) : Core.typ * Core.term =
       | t, _ ->
           Reporter.fatalf Type_error "`%s` is not appliable type"
             (Core.show_typ t))
+  | Match { target; cases } ->
+      (* TODO: no check pattern is valid here yet *)
+      let target_ty, target = infer target in
+      let tys : Core.typ list ref = ref [] in
+      let cases =
+        List.map
+          (fun (Surface.Case (pat, branch)) ->
+            let b_ty, branch = infer branch in
+            tys := b_ty :: !tys;
+            let pat = check_pattern target_ty pat in
+            Core.Case (pat, branch))
+          cases
+      in
+      let tys = !tys in
+      let ty =
+        List.fold_right
+          (fun ty acc ->
+            unify ~expected:acc ty;
+            acc)
+          (List.tl tys) (List.hd tys)
+      in
+      (ty, Match (target, cases))
+
+and check_pattern (target_ty : Core.typ) (pat : Surface.pat) : Core.pat =
+  match pat with
+  | PVar x ->
+      Context.S.include_singleton ([ x ], (target_ty, `Local));
+      PVar x
+  | Spine (h, ps) -> Spine (h, List.map (check_pattern target_ty) ps)
 
 and check (tm : Surface.term) (ty : Core.typ) : Core.term =
   match (tm, ty) with
@@ -58,17 +87,15 @@ and check (tm : Surface.term) (ty : Core.typ) : Core.term =
       unify ~expected:ty ty';
       tm
 
-let insert_constructor (data_type : Core.typ) (c : Surface.case) : unit =
-  match c with
-  | Case { name; params = tys } ->
-      let tys = List.map lift tys in
-      let ty = Core.build_app tys data_type in
-      Context.S.include_singleton ~context_visible:`Visible
-        ~context_export:`Export
-        ([ name ], (ty, `Local));
-      Environment.S.include_singleton ~context_visible:`Visible
-        ~context_export:`Export
-        ([ name ], (Spine (name, []), `Local))
+let insert_constructor (data_type : Core.typ)
+    (Ctor { name; params = tys } : Surface.ctor) : unit =
+  let tys = List.map lift tys in
+  let ty = Core.build_app tys data_type in
+  Context.S.include_singleton ~context_visible:`Visible ~context_export:`Export
+    ([ name ], (ty, `Local));
+  Environment.S.include_singleton ~context_visible:`Visible
+    ~context_export:`Export
+    ([ name ], (Spine (name, []), `Local))
 
 let rec process_file ~env ~working_dir source_path : Yuujinchou.Trie.path list =
   if Filename.extension source_path = ".kr" then (
@@ -110,16 +137,24 @@ and check_top ({ loc; value = top } : Surface.top Range.located) : unit =
       @@ Yuujinchou.Language.(union [ all; renaming path [] ]));
       Environment.S.modify_visible
       @@ Yuujinchou.Language.(union [ all; renaming path [] ])
-  | Data { name; cases } ->
+  | Data { name; ctors } ->
       Context.S.include_singleton ~context_visible:`Visible
         ~context_export:`Export
         ([ name ], (Type, `Local));
       let data_type : Core.typ = Const [ name ] in
       Context.S.section [ name ] @@ fun () ->
-      List.iter (insert_constructor data_type) cases
+      List.iter (insert_constructor data_type) ctors
   | Let { name; recursive; ty; body } ->
-      if recursive then (* TODO: skip recursive part for now *)
-        ()
+      if recursive then (
+        let ty = lift ty in
+        let body = check body ty in
+        Context.S.include_singleton ~context_visible:`Visible
+          ~context_export:`Export
+          ([ name ], (ty, `Local));
+        Environment.S.include_singleton ~context_visible:`Visible
+          ~context_export:`Export
+          ([ name ], (Eval.eval body, `Local));
+        Eio.traceln "let rec %s = ... checked" name)
       else
         let ty = lift ty in
         let body = check body ty in
