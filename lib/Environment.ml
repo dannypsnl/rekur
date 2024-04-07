@@ -36,8 +36,8 @@ module Handler = struct
 
   let not_found context prefix =
     Eio.traceln
-      "[Warning] Could not find any data within the subtree at %a%a.@." pp_path
-      prefix pp_context context
+      "[Warning] Could not find any binding within the subtree at `%a%a`.@."
+      pp_path prefix pp_context context
 
   let hook context prefix hook input =
     match hook with

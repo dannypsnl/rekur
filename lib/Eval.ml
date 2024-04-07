@@ -6,7 +6,7 @@ let rec eval (tm : Core.term) : Core.value =
       match Environment.S.resolve x with
       | Some (v, _) -> v
       | None ->
-          Reporter.fatalf NoVar_error "failed to find `%s` in context"
+          Reporter.fatalf NoVar_error "cannot find `%s` in environment"
             (String.concat " " x))
   | Lambda (x, body) ->
       Closure

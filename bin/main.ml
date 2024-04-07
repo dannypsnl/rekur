@@ -20,7 +20,8 @@ let common_process ~env filename =
       Rekur.Environment.S.modify_visible
       @@ Yuujinchou.Language.(union [ all; renaming p [] ]))
       (* except imported, also open current module for REPL *)
-    ([ Filename.remove_extension @@ Filename.basename filename ] :: import_list)
+    (List.append import_list
+       [ [ Filename.remove_extension @@ Filename.basename filename ] ])
 
 let run_cmd ~env =
   let arg_file =
@@ -72,8 +73,7 @@ let load_cmd ~env =
           let visible = Rekur.Context.S.get_visible () in
           Seq.iter (fun (path, (ty, _)) ->
               traceln "Γ ⊢ %s : %s" (String.concat "." path)
-                (Rekur.Syntax.Core.show_typ ty);
-              ())
+                (Rekur.Syntax.Core.show_typ ty))
           @@ Yuujinchou.Trie.to_seq visible;
           repl ~stdin ~stdout)
       $ arg_file)
