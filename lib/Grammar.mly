@@ -31,12 +31,12 @@ let typ :=
   | name=separated_nonempty_list(DOT, IDENT); { Const { name } }
   | t1=typ; ARROW; t2=typ; <Arrow>
 
-let app :=
-  | ts=list(tm); { build_tm ts }
+let multi_tm :=
+  | ts=nonempty_list(tm); { build_tm ts }
 let tm :=
   | FUN; name=IDENT; ARROW; tm=tm; { Lambda { param_name = name; body = tm } }
   | name=separated_nonempty_list(DOT, IDENT); { Var { name } }
-  | parens(app)
+  | parens(multi_tm)
 
 let case :=
   | VERT; name=IDENT; params=list(typ); { Case { name; params } }
@@ -45,11 +45,11 @@ let top_level :=
   | OPEN; ~=separated_nonempty_list(DOT, IDENT); <Open>
   | DATA; name=IDENT; cases=list(case); { Data { name; cases } }
   | LET; name=IDENT; COLON; ty=typ;
-    ASSIGN; ts=list(tm);
-    { Let { name; recursive = false; ty; body = build_tm ts } }
+    ASSIGN; body=multi_tm;
+    { Let { name; recursive = false; ty; body } }
   | LET; REC; name=IDENT; COLON; ty=typ;
-    ASSIGN; ts=list(tm);
-    { Let { name; recursive = true; ty; body = build_tm ts } }
+    ASSIGN; body=multi_tm;
+    { Let { name; recursive = true; ty; body } }
 
 let repl_term :=
   | ts=list(tm); EOF; { build_tm ts }
