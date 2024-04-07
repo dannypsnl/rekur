@@ -5,4 +5,4 @@ data Nat
 let rec plus : Nat -> Nat -> Nat := \m -> \n ->
   match m
   | zero -> n
-  | suc m -> (suc (plus m n))
+  | suc m -> suc (plus m n)

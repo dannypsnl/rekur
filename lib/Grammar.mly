@@ -36,7 +36,7 @@ let pat :=
   | ~=IDENT; ~=nonempty_list(pat); <Spine>
   | ~=IDENT; <PVar>
 let case :=
-  | VERT; ~=pat; ARROW; ~=tm; <Case>
+  | VERT; p=pat; ARROW; t=multi_tm; { Case (p, t) }
 
 let multi_tm :=
   | ts=nonempty_list(tm); { build_tm ts }
