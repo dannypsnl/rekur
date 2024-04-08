@@ -33,7 +33,7 @@ let typ :=
   | t1=typ; ARROW; t2=typ; <Arrow>
 
 let pat :=
-  | ~=IDENT; ~=nonempty_list(pat); <Spine>
+  | ~=IDENT; ~=nonempty_list(pat); <PApp>
   | ~=IDENT; <PVar>
 let case :=
   | VERT; p=pat; ARROW; t=multi_tm; { Case (p, t) }

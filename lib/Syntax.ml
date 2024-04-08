@@ -19,13 +19,7 @@ module Surface = struct
   [@@deriving show]
 
   and case = Case of pat * term [@@deriving show]
-
-  and pat =
-    (* this is wildcard pattern *)
-    | PVar of string
-    (* this is constructor pattern *)
-    | Spine of string * pat list
-  [@@deriving show]
+  and pat = PVar of string | PApp of string * pat list [@@deriving show]
 
   type top =
     | Open of Trie.path
@@ -76,6 +70,7 @@ module Core = struct
     | PVar of string
     (* this is constructor pattern *)
     | Spine of string * pat list
+  [@@deriving show]
 
   type value =
     (* spine is a value for normal form, e.g. `suc zero` is `Span suc [Span zero []]` *)
@@ -88,4 +83,7 @@ module Core = struct
     | Closure of (value -> value)
         [@printer fun fmt _ -> fprintf fmt "<closure>"]
   [@@deriving show]
+
+  let rec result_ty (ty : typ) : typ =
+    match ty with Arrow (_, p) -> result_ty p | t -> t
 end

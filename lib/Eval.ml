@@ -20,6 +20,7 @@ let rec eval (tm : Core.term) : Core.value =
       let v =
         List.fold_left
           (fun acc (Core.Case (pat, branch)) ->
+            Eio.traceln "evaluate pattern: %s" (Core.show_pat pat);
             match acc with
             | None ->
                 if eval_match target pat then Option.some @@ eval branch
@@ -38,7 +39,7 @@ and eval_match (target : Core.value) (pat : Core.pat) : bool =
   | Spine (head, ps) -> (
       match target with
       | Spine (h, tail) ->
-          if h == head then
+          if String.equal h head then
             List.fold_left2
               (fun acc p tail -> acc && eval_match tail p)
               true ps tail

@@ -4,3 +4,6 @@ import bool
 let id : Nat -> Nat := \x -> x
 let const : Nat := zero
 let const2 : Nat := suc zero
+let const3 : Bool := not true
+let const4 : Nat :=
+  plus (suc zero) (suc zero)

@@ -47,7 +47,6 @@ let rec infer (tm : Surface.term) : Core.typ * Core.term =
           Reporter.fatalf Type_error "`%s : %s` is not appliable"
             (Core.show_term a) (Core.show_typ t))
   | Match { target; cases } ->
-      (* TODO: no check pattern is valid here yet *)
       let target_ty, target = infer target in
       let tys : Core.typ list ref = ref [] in
       let cases =
@@ -71,10 +70,22 @@ let rec infer (tm : Surface.term) : Core.typ * Core.term =
 
 and check_pattern (target_ty : Core.typ) (pat : Surface.pat) : Core.pat =
   match pat with
-  | PVar x ->
-      Context.S.include_singleton ([ x ], (target_ty, `Local));
-      PVar x
-  | Spine (h, ps) -> Spine (h, List.map (check_pattern target_ty) ps)
+  | PVar x -> (
+      match Context.S.resolve [ x ] with
+      | Some (ty, `Constructor) ->
+          unify ~expected:target_ty ty;
+          Spine (x, [])
+      | _ ->
+          Context.S.include_singleton ([ x ], (target_ty, `Local));
+          PVar x)
+  | PApp (h, ps) -> (
+      match Context.S.resolve [ h ] with
+      | None ->
+          Reporter.fatalf Type_error "`%s` is not a constructor of `%s`" h
+            (Core.show_typ target_ty)
+      | Some (ty, _) ->
+          unify ~expected:target_ty (Core.result_ty ty);
+          Spine (h, List.map (check_pattern target_ty) ps))
 
 and check (tm : Surface.term) (ty : Core.typ) : Core.term =
   match (tm, ty) with
@@ -97,7 +108,7 @@ let insert_constructor (data_type : Core.typ)
   let tys = List.map lift tys in
   let ty = Core.build_app tys data_type in
   Context.S.include_singleton ~context_visible:`Visible ~context_export:`Export
-    ([ name ], (ty, `Local));
+    ([ name ], (ty, `Constructor));
   Environment.S.include_singleton ~context_visible:`Visible
     ~context_export:`Export
     ([ name ], (Spine (name, []), `Local))

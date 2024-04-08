@@ -5,7 +5,7 @@ type modifier_cmd = Trace
 
 module TypeContext = struct
   type data = Syntax.Core.typ
-  type tag = [ `Imported | `Local ]
+  type tag = [ `Imported | `Local | `Constructor ]
   type hook = modifier_cmd
   type context = [ `Visible | `Export ]
 end
@@ -28,6 +28,7 @@ module Handler = struct
   let pp_item fmt = function
     | x, `Imported -> Format.fprintf fmt "%s (imported)" (show_typ x)
     | x, `Local -> Format.fprintf fmt "%s (local)" (show_typ x)
+    | x, `Constructor -> Format.fprintf fmt "%s (constructor)" (show_typ x)
 
   let shadow context path x y =
     Eio.traceln "[Warning] Data %a assigned at %a was shadowed by data %a%a.@."
