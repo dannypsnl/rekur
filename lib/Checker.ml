@@ -80,12 +80,12 @@ and check_pattern (target_ty : Core.typ) (pat : Surface.pat) : Core.pat =
           PVar x)
   | PApp (h, ps) -> (
       match Context.S.resolve [ h ] with
-      | None ->
-          Reporter.fatalf Type_error "`%s` is not a constructor of `%s`" h
-            (Core.show_typ target_ty)
-      | Some (ty, _) ->
+      | Some (ty, `Constructor) ->
           unify ~expected:target_ty (Core.result_ty ty);
-          Spine (h, List.map (check_pattern target_ty) ps))
+          Spine (h, List.map (check_pattern target_ty) ps)
+      | _ ->
+          Reporter.fatalf Type_error "`%s` is not a constructor of `%s`" h
+            (Core.show_typ target_ty))
 
 and check (tm : Surface.term) (ty : Core.typ) : Core.term =
   match (tm, ty) with
