@@ -31,8 +31,8 @@ module Handler = struct
     | x, `Constructor -> Format.fprintf fmt "%s (constructor)" (show_typ x)
 
   let shadow context path x y =
-    Eio.traceln "[Warning] Data %a assigned at %a was shadowed by data %a%a.@."
-      pp_item x pp_path path pp_item y pp_context context;
+    Eio.traceln "shadowing, Γ ⊢ %a : %a -> %a%a.@." pp_path path pp_item x
+      pp_item y pp_context context;
     y
 
   let not_found context prefix =
