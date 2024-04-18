@@ -165,16 +165,20 @@ and check_top ({ loc; value = top } : Surface.top Range.located) : unit =
         Context.S.include_singleton ~context_visible:`Visible
           ~context_export:`Export
           ([ name ], (ty, `Local));
-        let body = check body ty in
+        let body = Context.S.section [ name ] @@ fun () -> check body ty in
         Environment.S.include_singleton ~context_visible:`Visible
           ~context_export:`Export
-          ([ name ], (Eval.eval body, `Local)))
+          ( [ name ],
+            Environment.S.section [ name ] @@ fun () -> (Eval.eval body, `Local)
+          ))
       else
         let ty = lift ty in
-        let body = check body ty in
+        let body = Context.S.section [ name ] @@ fun () -> check body ty in
         Context.S.include_singleton ~context_visible:`Visible
           ~context_export:`Export
           ([ name ], (ty, `Local));
         Environment.S.include_singleton ~context_visible:`Visible
           ~context_export:`Export
-          ([ name ], (Eval.eval body, `Local))
+          ( [ name ],
+            Environment.S.section [ name ] @@ fun () -> (Eval.eval body, `Local)
+          )
